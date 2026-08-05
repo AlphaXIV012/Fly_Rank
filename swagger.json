@@ -1,0 +1,198 @@
+{
+  "openapi": "3.0.0",
+
+  "info": {
+    "title": "Task API",
+    "version": "1.0.0",
+    "description": "A simple CRUD API for managing tasks."
+  },
+
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+
+  "paths": {
+
+    "/tasks": {
+
+      "get": {
+        "summary": "Get all tasks",
+
+        "responses": {
+          "200": {
+            "description": "Returns all tasks"
+          }
+        }
+      },
+
+      "post": {
+        "summary": "Create a new task",
+
+        "requestBody": {
+          "required": true,
+
+          "content": {
+            "application/json": {
+
+              "schema": {
+                "$ref": "#/components/schemas/Task"
+              }
+            }
+          }
+        },
+
+        "responses": {
+          "201": {
+            "description": "Task created successfully"
+          },
+
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+
+    "/tasks/{id}": {
+
+      "get": {
+        "summary": "Get a task by ID",
+
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+
+        "responses": {
+          "200": {
+            "description": "Task found"
+          },
+
+          "404": {
+            "description": "Task not found"
+          }
+        }
+      },
+
+      "put": {
+        "summary": "Update a task by ID",
+
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+
+        "requestBody": {
+          "required": true,
+
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Task"
+              }
+            }
+          }
+        },
+
+        "responses": {
+          "201": {
+            "description": "Task updated successfully"
+          },
+
+          "404": {
+            "description": "Task not found"
+          }
+        }
+      },
+
+      "delete": {
+        "summary": "Delete a task by ID",
+
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+
+        "responses": {
+          "204": {
+            "description": "Task deleted successfully"
+          },
+
+          "404": {
+            "description": "Task not found"
+          }
+        }
+      }
+    },
+
+    "/health": {
+
+      "get": {
+        "summary": "Health check endpoint",
+
+        "responses": {
+          "200": {
+            "description": "API is healthy"
+          }
+        }
+      }
+    }
+  },
+
+  "components": {
+
+    "schemas": {
+
+      "Task": {
+
+        "type": "object",
+
+        "required": [
+          "title",
+          "done"
+        ],
+
+        "properties": {
+
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+
+          "title": {
+            "type": "string",
+            "example": "Complete Swagger assignment"
+          },
+
+          "done": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      }
+    }
+  }
+}

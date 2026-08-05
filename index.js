@@ -1,9 +1,14 @@
 const express = require("express");
 const app = express();
+
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
+    
 require("dotenv").config();
 const port = process.env.PORT || 3010;
 
 app.use(express.json());
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const myTasks = [
   {id: 1, title: "flyrank Tutorial", done: true, },
@@ -51,7 +56,7 @@ app.put("/tasks/:id", (req, res) => {
     const { title, done } = req.body;
     const task = Tasks.find((t) => t.id === taskId);
 
-    if (!task || !done) {
+    if (!task) {
         return res.status(404).json({ error: `Task ${taskId} not found` });
     }
 
@@ -68,7 +73,7 @@ app.delete("/tasks/:id", (req, res) => {
         return res.status(404).json({ error: `Task ${taskId} not found` });
     }
     Tasks.splice(task, 1);
-    res.status(200).json({ message: `Task ${taskId} deleted successfully` });
+    res.status(204).json({ message: `Task ${taskId} deleted successfully` });
 
 });
 
