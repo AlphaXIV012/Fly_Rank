@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 
+const db = require("./database");
+
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
     
@@ -16,11 +18,29 @@ const myTasks = [
   {id: 3, title: "flyrank capstone", done: false, }
 ];  
 
-let Tasks = myTasks.map((task) => ({...task}));
+let tasks = myTasks.map((task) => ({...task}));
 
 // GET all tasks
 app.get("/tasks", (req, res) => {
-    res.json(Tasks);
+    let result = tasks
+    
+
+    if (req.query.done !== undefined){
+        if(req.query.done !== "true" && req.query.done !== "false")
+            return res.status(404).json({ error: "done must be true or false" });
+    }
+    const done = req.query.done === "true"
+    result = result.filter((t) => t.done === done)
+
+    if (req.query.search !== undefined){
+        const word = String(req.query.search).trim()
+        if(word === ""){
+            return res.status(404).json({ error: "search must not be empty" });
+        }
+        result = result.filter((t) => t.title.includes(word))
+    }
+
+    res.json(result);
 });
 
 // GET a specific task by ID
@@ -41,11 +61,19 @@ app.get("/health", (req, res) => {
 // Create a new task
 app.post("/tasks", (req, res) => {
     const { title, done } = req.body;
-    const newTask = { id: Tasks.length + 1, title, done };
 
-    if(!title) {
+    if(title === undefined || title === null || String(title).trim() === "") {
         return res.status(400).json({ error: "Title is required" });
     }
+    if (typeof title !== "string") {
+        return res.status(400).json({
+            error: "Title must be a word character",
+        });
+    }
+
+    const id = tasks.length === 0 ? 1 : Math.max(...tasks.map((t) => t.id )) + 1;
+    const newtask = {id, title: String(title).trim(), done : false }
+
     Tasks.push(newTask);
     res.status(201).json(newTask);
 });
@@ -54,7 +82,7 @@ app.post("/tasks", (req, res) => {
 app.put("/tasks/:id", (req, res) => {
     const taskId = parseInt(req.params.id);
     const { title, done } = req.body;
-    const task = Tasks.find((t) => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
 
     if (!task) {
         return res.status(404).json({ error: `Task ${taskId} not found` });
@@ -67,7 +95,7 @@ app.put("/tasks/:id", (req, res) => {
 // Delete a task
 app.delete("/tasks/:id", (req, res) => {
     const taskId = parseInt(req.params.id);
-    const task = Tasks.findIndex((t) => t.id === taskId);
+    const task = tasks.findIndex((t) => t.id === taskId);
 
     if (task === -1) {
         return res.status(404).json({ error: `Task ${taskId} not found` });
