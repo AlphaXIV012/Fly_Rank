@@ -53,7 +53,7 @@ app.get("/health", (req, res) => {
 
 // Create a new task
 app.post("/tasks", (req, res) => {
-    const { title, done } = req.body;
+    const { title } = req.body;
 
     if(title === undefined || title === null || String(title).trim() === "") {
         return res.status(400).json({ error: "Title is required" });
@@ -64,12 +64,27 @@ app.post("/tasks", (req, res) => {
         });
     }
 
-    const id = tasks.length === 0 ? 1 : Math.max(...tasks.map((t) => t.id )) + 1;
-    const newtask = {id, title: String(title).trim(), done : false }
+    // const result = db.prepare(`
+    //     INSERT INTO tasks (title, done)
+    //     VALUES (?, ?)
+    // `).run(title.trim(), 0);
 
-    Tasks.push(newTask);
+    const insert = db.prepare(`
+        INSERT INTO tasks (title, done)
+        VALUES (?, ?)
+    `)
+
+    const result = insert.run(title.trim(), 0);
+
+    const newTask = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(result.lastInsertRowid);
+
+    // Return the newly created task
     res.status(201).json(newTask);
+
 });
+
 
 // Update an existing task
 app.put("/tasks/:id", (req, res) => {
