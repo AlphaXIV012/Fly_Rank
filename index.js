@@ -22,34 +22,27 @@ let tasks = myTasks.map((task) => ({...task}));
 
 // GET all tasks
 app.get("/tasks", (req, res) => {
-    let result = tasks
-    
+    const tasks = db
+        .prepare("SELECT * FROM tasks")
+        .all();
 
-    if (req.query.done !== undefined){
-        if(req.query.done !== "true" && req.query.done !== "false")
-            return res.status(404).json({ error: "done must be true or false" });
-    }
-    const done = req.query.done === "true"
-    result = result.filter((t) => t.done === done)
-
-    if (req.query.search !== undefined){
-        const word = String(req.query.search).trim()
-        if(word === ""){
-            return res.status(404).json({ error: "search must not be empty" });
-        }
-        result = result.filter((t) => t.title.includes(word))
-    }
-
-    res.json(result);
+    res.json(tasks);
 });
 
 // GET a specific task by ID
 app.get("/tasks/:id", (req, res) => {
     const taskId = parseInt(req.params.id);
-    const task = Tasks.find((task) => task.id === taskId);
+
+    const task = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(taskId);
+
     if (!task) {
-        return res.status(404).json({ error: `Task ${taskId} not found` });
+        return res.status(404).json({
+            error: "Task not found"
+        });
     }
+
     res.json(task);
 });
 
