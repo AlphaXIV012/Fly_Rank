@@ -90,25 +90,63 @@ app.post("/tasks", (req, res) => {
 app.put("/tasks/:id", (req, res) => {
     const taskId = parseInt(req.params.id);
     const { title, done } = req.body;
-    const task = tasks.find((t) => t.id === taskId);
+
+    if (typeof title !== "string" || !title.trim()) {
+    return res.status(400).json({
+        error: "Title is required"
+    });
+}
+
+if (typeof done !== "boolean") {
+    return res.status(400).json({
+        error: "Done must be true or false"
+    });
+}
+
+    const task = db
+    .prepare("SELECT * FROM tasks WHERE id = ?")
+    .get(taskId);
 
     if (!task) {
-        return res.status(404).json({ error: `Task ${taskId} not found` });
+    return res.status(404).json({
+        error: `Task ${taskId} not found`
+    });
+}
+
+    const update = db.prepare(`
+    UPDATE tasks
+    SET title = ?, done = ?
+    WHERE id = ?
+`);
+
+    const result = update.run(title.trim(), done?1:0, taskId);
+
+    if (result.changes === 0) {
+        return res.status(404).json({
+            error: `Task ${taskId} not found`
+        });
     }
 
-    Object.assign(task, req.body)
-    res.status(201).json(task);
+    const updatedTask = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(taskId);
+
+    res.json(updatedTask);
 });
 
 // Delete a task
 app.delete("/tasks/:id", (req, res) => {
     const taskId = parseInt(req.params.id);
-    const task = tasks.findIndex((t) => t.id === taskId);
+    const task = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(taskId);
 
-    if (task === -1) {
+    if (!task) {
         return res.status(404).json({ error: `Task ${taskId} not found` });
     }
-    Tasks.splice(task, 1);
+
+    const remove = db.prepare("DELETE FROM tasks WHERE id = ?")
+    remove.run(taskId);
     res.status(204).json({ message: `Task ${taskId} deleted successfully` });
 
 });
