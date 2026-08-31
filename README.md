@@ -1,13 +1,16 @@
 # Task API
 
-A simple RESTful API built with Express.js that allows users to create, read, update, and delete tasks. The API also includes interactive documentation using Swagger UI.
+A simple RESTful API built with Express.js that allows users to create, read, update, and delete tasks.
+
+The API uses SQLite for persistent data storage and includes interactive API documentation using Swagger UI.
 
 ## Installation
 
-1. Clone the repository
+### 1. Clone the repository
+
 
 ```bash
-git clone https://github.com/yourusername/task-api.git
+git clone https://github.com/AlphaXIV012/Fly_Rank
 ```
 
 2. Install dependencies
@@ -45,17 +48,25 @@ Content-Length: 15
 - Get a task by ID
 - Update a task
 - Delete a task
+- Filter tasks by completion status
+- Search tasks by title
+- SQLite database for persistent storage
 - Swagger UI documentation
+
 
 ## API Documentation
 
 Open the Swagger UI at:
 
-http://localhost:3010/api-docs
+http://localhost:3000/api-docs
 
 ## Swagger UI
 
 ![Swagger UI](images/swagger-ui.png)
+
+## DB Sqlite
+
+![DB Browser](images/DB%20Screenshot.png)
 
 ## Technologies Used
 
@@ -66,3 +77,4 @@ http://localhost:3010/api-docs
 - **dotenv** – Environment variable management
 - **Nodemon** – Automatically restarts the server during development
 - **Git & GitHub** – Version control and project hosting
+- **better-sqlite3** – SQLite database library
