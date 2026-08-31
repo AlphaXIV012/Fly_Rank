@@ -7,7 +7,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
     
 require("dotenv").config();
-const port = process.env.PORT || 3010;
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -22,34 +22,27 @@ let tasks = myTasks.map((task) => ({...task}));
 
 // GET all tasks
 app.get("/tasks", (req, res) => {
-    let result = tasks
-    
+    const tasks = db
+        .prepare("SELECT * FROM tasks")
+        .all();
 
-    if (req.query.done !== undefined){
-        if(req.query.done !== "true" && req.query.done !== "false")
-            return res.status(404).json({ error: "done must be true or false" });
-    }
-    const done = req.query.done === "true"
-    result = result.filter((t) => t.done === done)
-
-    if (req.query.search !== undefined){
-        const word = String(req.query.search).trim()
-        if(word === ""){
-            return res.status(404).json({ error: "search must not be empty" });
-        }
-        result = result.filter((t) => t.title.includes(word))
-    }
-
-    res.json(result);
+    res.json(tasks);
 });
 
 // GET a specific task by ID
 app.get("/tasks/:id", (req, res) => {
     const taskId = parseInt(req.params.id);
-    const task = Tasks.find((task) => task.id === taskId);
+
+    const task = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(taskId);
+
     if (!task) {
-        return res.status(404).json({ error: `Task ${taskId} not found` });
+        return res.status(404).json({
+            error: "Task not found"
+        });
     }
+
     res.json(task);
 });
 
@@ -60,7 +53,7 @@ app.get("/health", (req, res) => {
 
 // Create a new task
 app.post("/tasks", (req, res) => {
-    const { title, done } = req.body;
+    const { title } = req.body;
 
     if(title === undefined || title === null || String(title).trim() === "") {
         return res.status(400).json({ error: "Title is required" });
@@ -71,39 +64,93 @@ app.post("/tasks", (req, res) => {
         });
     }
 
-    const id = tasks.length === 0 ? 1 : Math.max(...tasks.map((t) => t.id )) + 1;
-    const newtask = {id, title: String(title).trim(), done : false }
+    // const result = db.prepare(`
+    //     INSERT INTO tasks (title, done)
+    //     VALUES (?, ?)
+    // `).run(title.trim(), 0);
 
-    Tasks.push(newTask);
+    const insert = db.prepare(`
+        INSERT INTO tasks (title, done)
+        VALUES (?, ?)
+    `)
+
+    const result = insert.run(title.trim(), 0);
+
+    const newTask = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(result.lastInsertRowid);
+
+    // Return the newly created task
     res.status(201).json(newTask);
+
 });
+
 
 // Update an existing task
 app.put("/tasks/:id", (req, res) => {
     const taskId = parseInt(req.params.id);
     const { title, done } = req.body;
-    const task = tasks.find((t) => t.id === taskId);
+
+    if (typeof title !== "string" || !title.trim()) {
+    return res.status(400).json({
+        error: "Title is required"
+    });
+}
+
+if (typeof done !== "boolean") {
+    return res.status(400).json({
+        error: "Done must be true or false"
+    });
+}
+
+    const task = db
+    .prepare("SELECT * FROM tasks WHERE id = ?")
+    .get(taskId);
 
     if (!task) {
-        return res.status(404).json({ error: `Task ${taskId} not found` });
+    return res.status(404).json({
+        error: `Task ${taskId} not found`
+    });
+}
+
+    const update = db.prepare(`
+    UPDATE tasks
+    SET title = ?, done = ?
+    WHERE id = ?
+`);
+
+    const result = update.run(title.trim(), done?1:0, taskId);
+
+    if (result.changes === 0) {
+        return res.status(404).json({
+            error: `Task ${taskId} not found`
+        });
     }
 
-    Object.assign(task, req.body)
-    res.status(201).json(task);
+    const updatedTask = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(taskId);
+
+    res.json(updatedTask);
 });
 
 // Delete a task
 app.delete("/tasks/:id", (req, res) => {
     const taskId = parseInt(req.params.id);
-    const task = tasks.findIndex((t) => t.id === taskId);
+    const task = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(taskId);
 
-    if (task === -1) {
+    if (!task) {
         return res.status(404).json({ error: `Task ${taskId} not found` });
     }
-    Tasks.splice(task, 1);
+
+    const remove = db.prepare("DELETE FROM tasks WHERE id = ?")
+    remove.run(taskId);
     res.status(204).json({ message: `Task ${taskId} deleted successfully` });
 
 });
+
 
 app.listen(port, () => {
   console.log(`Server is running on port http://localhost:${port}`);
