@@ -1,28 +1,59 @@
-const Database = require("better-sqlite3");
+const { Pool } = require("pg");
+require("dotenv").config();
 
-const db = new Database("tasks.db");
+// Create a connection pool
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+});
 
-db.prepare(`
-    CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        done INTEGER NOT NULL DEFAULT 0
-    )
-`).run();
-
-const count = db.prepare(
-    "SELECT COUNT(*) AS count FROM tasks"
-).get();
-
-if (count.count === 0) {
-    const insert = db.prepare(`
-        INSERT INTO tasks (title, done)
-        VALUES (?, ?)
+// Create the table if it doesn't exist
+const createTable = async () => {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS tasks (
+            id SERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            done BOOLEAN NOT NULL DEFAULT FALSE
+        )
     `);
+};
 
-    insert.run("flyrank Tutorial", 1);
-    insert.run("flyrank assignment", 0);
-    insert.run("flyrank capstone", 0);
-}
+// Add the initial tasks only if the table is empty
+const seedTasks = async () => {
+    const result = await pool.query(
+        "SELECT COUNT(*) FROM tasks"
+    );
 
-module.exports = db;
+    const count = parseInt(result.rows[0].count);
+
+    if (count === 0) {
+        await pool.query(`
+            INSERT INTO tasks (title, done)
+            VALUES
+                ('flyrank Tutorial', TRUE),
+                ('flyrank assignment', FALSE),
+                ('flyrank capstone', FALSE)
+        `);
+
+        console.log("Initial tasks inserted");
+    }
+};
+
+// Initialize the database
+const initializeDatabase = async () => {
+    try {
+        await createTable();
+        await seedTasks();
+
+        console.log("PostgreSQL connected successfully");
+    } catch (error) {
+        console.error("Database initialization failed:", error.message);
+        console.error(error)
+        process.exit(1);
+    }
+};
+
+
+module.exports = {
+    pool,
+    initializeDatabase
+};
