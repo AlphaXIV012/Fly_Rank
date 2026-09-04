@@ -107,7 +107,7 @@ The application uses PostgreSQL as its persistent database.
 
 PostgreSQL runs inside a Docker container, allowing the database environment to be easily started and reproduced across different machines.
 
-![PostgreSQL Database](images/DB%20Screenshot.png)
+![PostgreSQL Database](images\Postgre_Docker.png)
 
 ## Technologies Used
 
