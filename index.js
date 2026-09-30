@@ -107,6 +107,35 @@ app.delete("/tasks/:id", async (req, res, next) => {
     }
 });
 
+app.get("/public/info", (req, res) => {
+    res.status(200).json({
+        message: "This is a public route"
+    });
+});
+
+app.get("/protected/profile", (req, res) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({
+            error: "Access token required"
+        });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({
+            error: "Access token required"
+        });
+    }
+
+    res.status(200).json({
+        message: "You have access to the protected profile",
+        token
+    });
+});
+
 // Centralized error handler
 app.use(errorHandler);
 
