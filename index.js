@@ -18,7 +18,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 
 // GET all tasks
-app.get("/tasks", async (req, res) => {
+app.get("/tasks", async (req, res, next) => {
     try {
         const result = await taskService.getAllTasks();
 
@@ -29,7 +29,7 @@ app.get("/tasks", async (req, res) => {
 });
 
 // GET a specific task by ID
-app.get("/tasks/:id", async (req, res) => {
+app.get("/tasks/:id", async (req, res, next) => {
     try {
         const taskId = parseInt(req.params.id, 10);
 
