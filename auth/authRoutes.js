@@ -20,6 +20,10 @@ router.post("/signup", async (req, res) => {
             password
         });
 
+        console.log("SUPABASE RESPONSE:");
+        console.log("data:", data);
+        console.log("error:", error);
+
         if (error) {
             return res.status(400).json({
                 error: error.message
@@ -32,12 +36,25 @@ router.post("/signup", async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+    console.error("SIGNUP ERROR:");
+    console.error(error);
+    console.error("CAUSE:");
+    console.error(error.cause);
 
-        return res.status(500).json({
-            error: "Internal server error"
-        });
+    return res.status(500).json({
+        error: error.message,
+        cause: error.cause?.message || null
+    });
     }
+    
+    
+    // catch (error) {
+    //     console.error(error);
+
+    //     return res.status(500).json({
+    //         error: "Internal server error"
+    //     });
+    // }
 });
 
 
@@ -71,11 +88,15 @@ router.post("/login", async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+    console.error("LOGIN ERROR:");
+    console.error(error);
+    console.error("CAUSE:");
+    console.error(error.cause);
 
-        return res.status(500).json({
-            error: "Internal server error"
-        });
+    return res.status(500).json({
+        error: error.message,
+        cause: error.cause?.message || null
+    });
     }
 });
 

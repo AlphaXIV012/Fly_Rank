@@ -4,7 +4,8 @@ const app = express();
 const errorHandler = require("./middleware/errorHandler");
 const taskService = require("./services/taskService");
 const { initializeDatabase } = require("./database");
-
+const supabase = require("./config/supabase");
+const authRoutes = require("./auth/authRoutes");
 
 
 const swaggerUi = require('swagger-ui-express');
@@ -14,6 +15,7 @@ require("dotenv").config();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use("/auth", authRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 
@@ -113,27 +115,49 @@ app.get("/public/info", (req, res) => {
     });
 });
 
-app.get("/protected/profile", (req, res) => {
-    const authHeader = req.headers.authorization;
+app.get("/protected/profile", async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({
-            error: "Access token required"
+        // Check if Authorization header exists
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({
+                error: "Access token required"
+            });
+        }
+
+        // Extract token
+        const token = authHeader.split(" ")[1];
+
+        if (!token) {
+            return res.status(401).json({
+                error: "Access token required"
+            });
+        }
+
+        // Verify token with Supabase
+        const { data, error } = await supabase.auth.getUser(token);
+
+        if (error || !data.user) {
+            return res.status(401).json({
+                error: "Invalid or expired token"
+            });
+        }
+
+        // Token is valid
+        return res.status(200).json({
+            id: data.user.id,
+            email: data.user.email,
+            created_at: data.user.created_at
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            error: "Internal server error"
         });
     }
-
-    const token = authHeader.split(" ")[1];
-
-    if (!token) {
-        return res.status(401).json({
-            error: "Access token required"
-        });
-    }
-
-    res.status(200).json({
-        message: "You have access to the protected profile",
-        token
-    });
 });
 
 // Centralized error handler
