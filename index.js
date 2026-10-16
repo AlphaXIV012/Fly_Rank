@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 
 const errorHandler = require("./middleware/errorHandler");
+const authenticateUser = require("./middleware/authMiddleware");
 const taskService = require("./services/taskService");
 const { initializeDatabase } = require("./database");
 const supabase = require("./config/supabase");
@@ -115,49 +116,22 @@ app.get("/public/info", (req, res) => {
     });
 });
 
-app.get("/protected/profile", async (req, res) => {
-    try {
-        const authHeader = req.headers.authorization;
+app.get("/protected/profile", authenticateUser, (req, res) => {
+    return res.status(200).json({
+        id: req.user.id,
+        email: req.user.email,
+        created_at: req.user.created_at
+    });
+});
 
-        // Check if Authorization header exists
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return res.status(401).json({
-                error: "Access token required"
-            });
+app.get("/protected/dashboard", authenticateUser, (req, res) => {
+    return res.status(200).json({
+        message: "Welcome to your protected dashboard",
+        user: {
+            id: req.user.id,
+            email: req.user.email
         }
-
-        // Extract token
-        const token = authHeader.split(" ")[1];
-
-        if (!token) {
-            return res.status(401).json({
-                error: "Access token required"
-            });
-        }
-
-        // Verify token with Supabase
-        const { data, error } = await supabase.auth.getUser(token);
-
-        if (error || !data.user) {
-            return res.status(401).json({
-                error: "Invalid or expired token"
-            });
-        }
-
-        // Token is valid
-        return res.status(200).json({
-            id: data.user.id,
-            email: data.user.email,
-            created_at: data.user.created_at
-        });
-
-    } catch (error) {
-        console.error(error);
-
-        return res.status(500).json({
-            error: "Internal server error"
-        });
-    }
+    });
 });
 
 // Centralized error handler

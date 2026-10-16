@@ -1,5 +1,6 @@
 const express = require("express");
 const supabase = require("../config/supabase");
+const authenticateUser = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -83,8 +84,10 @@ router.post("/login", async (req, res) => {
         }
 
         return res.status(200).json({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token
+            // access_token: data.session.access_token,
+            // refresh_token: data.session.refresh_token
+            message: "User created successfully",
+            user: data.user
         });
 
     } catch (error) {
@@ -97,6 +100,31 @@ router.post("/login", async (req, res) => {
         error: error.message,
         cause: error.cause?.message || null
     });
+    }
+});
+
+
+// POST /auth/logout
+router.post("/logout", authenticateUser, async (req, res) => {
+    try {
+        const { error } = await supabase.auth.signOut();
+
+        if (error) {
+            console.error("Logout error:", error);
+
+            return res.status(500).json({
+                error: "Logout failed"
+            });
+        }
+
+        return res.status(204).send();
+
+    } catch (error) {
+        console.error("Logout error:", error);
+
+        return res.status(500).json({
+            error: "Internal server error"
+        });
     }
 });
 
