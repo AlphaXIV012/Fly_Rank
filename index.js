@@ -2,9 +2,11 @@ const express = require("express");
 const app = express();
 
 const errorHandler = require("./middleware/errorHandler");
+const authenticateUser = require("./middleware/authMiddleware");
 const taskService = require("./services/taskService");
 const { initializeDatabase } = require("./database");
-
+const supabase = require("./config/supabase");
+const authRoutes = require("./auth/authRoutes");
 
 
 const swaggerUi = require('swagger-ui-express');
@@ -14,6 +16,7 @@ require("dotenv").config();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use("/auth", authRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 
@@ -105,6 +108,30 @@ app.delete("/tasks/:id", async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+});
+
+app.get("/public/info", (req, res) => {
+    res.status(200).json({
+        message: "This is a public route"
+    });
+});
+
+app.get("/protected/profile", authenticateUser, (req, res) => {
+    return res.status(200).json({
+        id: req.user.id,
+        email: req.user.email,
+        created_at: req.user.created_at
+    });
+});
+
+app.get("/protected/dashboard", authenticateUser, (req, res) => {
+    return res.status(200).json({
+        message: "Welcome to your protected dashboard",
+        user: {
+            id: req.user.id,
+            email: req.user.email
+        }
+    });
 });
 
 // Centralized error handler

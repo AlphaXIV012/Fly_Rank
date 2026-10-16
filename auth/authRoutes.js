@@ -1,5 +1,6 @@
 const express = require("express");
 const supabase = require("../config/supabase");
+const authenticateUser = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -20,6 +21,10 @@ router.post("/signup", async (req, res) => {
             password
         });
 
+        console.log("SUPABASE RESPONSE:");
+        console.log("data:", data);
+        console.log("error:", error);
+
         if (error) {
             return res.status(400).json({
                 error: error.message
@@ -32,12 +37,25 @@ router.post("/signup", async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+    console.error("SIGNUP ERROR:");
+    console.error(error);
+    console.error("CAUSE:");
+    console.error(error.cause);
 
-        return res.status(500).json({
-            error: "Internal server error"
-        });
+    return res.status(500).json({
+        error: error.message,
+        cause: error.cause?.message || null
+    });
     }
+    
+    
+    // catch (error) {
+    //     console.error(error);
+
+    //     return res.status(500).json({
+    //         error: "Internal server error"
+    //     });
+    // }
 });
 
 
@@ -66,12 +84,43 @@ router.post("/login", async (req, res) => {
         }
 
         return res.status(200).json({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token
+            // access_token: data.session.access_token,
+            // refresh_token: data.session.refresh_token
+            message: "User created successfully",
+            user: data.user
         });
 
     } catch (error) {
-        console.error(error);
+    console.error("LOGIN ERROR:");
+    console.error(error);
+    console.error("CAUSE:");
+    console.error(error.cause);
+
+    return res.status(500).json({
+        error: error.message,
+        cause: error.cause?.message || null
+    });
+    }
+});
+
+
+// POST /auth/logout
+router.post("/logout", authenticateUser, async (req, res) => {
+    try {
+        const { error } = await supabase.auth.signOut();
+
+        if (error) {
+            console.error("Logout error:", error);
+
+            return res.status(500).json({
+                error: "Logout failed"
+            });
+        }
+
+        return res.status(204).send();
+
+    } catch (error) {
+        console.error("Logout error:", error);
 
         return res.status(500).json({
             error: "Internal server error"
